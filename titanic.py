@@ -98,18 +98,63 @@ print(classification_report(y_test, y_pred))
 import joblib
 joblib.dump(model, 'model.pkl')
 
-from flask import Flask, request, jsonify
-import joblib
+from flask import Flask, request, render_template
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+
+# Initialize Flask app
 app = Flask(__name__)
 
-# Load the trained model
-model = joblib.load('model.pkl')
+# Load the Titanic dataset and train the model
+titanic_data = pd.read_csv('titanic dataset/train.csv')
+
+# Preprocessing: Handle categorical features
+label_encoder = LabelEncoder()
+titanic_data['Sex'] = label_encoder.fit_transform(titanic_data['Sex'])
+titanic_data['Embarked'] = label_encoder.fit_transform(titanic_data['Embarked'].fillna('S'))
+
+# Select features and target
+X = titanic_data[['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']]
+y = titanic_data['Survived']
+
+# Train RandomForest model
+model = RandomForestClassifier()
+model.fit(X, y)
+
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    data = request.get_json(force=True)
-    prediction = model.predict([data['features']])
-    return jsonify({'prediction': int(prediction[0])})
+    try:
+        # Get the input values from the form
+        Pclass = int(request.form['Pclass'])
+        Sex = request.form['Sex']
+        Age = float(request.form['Age'])
+        SibSp = int(request.form['SibSp'])
+        Parch = int(request.form['Parch'])
+        Fare = float(request.form['Fare'])
+        Embarked = request.form['Embarked']
 
-if __name__ == "__main__":
+        # Preprocess the input data
+        Sex = label_encoder.transform([Sex])[0]
+        Embarked = label_encoder.transform([Embarked])[0]
+
+        # Make the prediction
+        prediction = model.predict([[Pclass, Sex, Age, SibSp, Parch, Fare, Embarked]])
+
+        # Output the result
+        if prediction == 1:
+            result = "Survived"
+        else:
+            result = "Did not survive"
+        
+        return render_template('result.html', prediction=result)
+
+    except Exception as e:
+        return f"Error: {e}"
+
+if __name__ == '__main__':
     app.run(debug=True)

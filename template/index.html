@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titanic Survival Prediction</title>
+</head>
+<body>
+    <h2>Titanic Survival Prediction</h2>
+    <form action="/predict" method="POST">
+        <label for="Pclass">Pclass:</label>
+        <input type="number" id="Pclass" name="Pclass" required><br><br>
+
+        <label for="Sex">Sex (male/female):</label>
+        <input type="text" id="Sex" name="Sex" required><br><br>
+
+        <label for="Age">Age:</label>
+        <input type="number" id="Age" name="Age" required><br><br>
+
+        <label for="SibSp">SibSp (Siblings/Spouse aboard):</label>
+        <input type="number" id="SibSp" name="SibSp" required><br><br>
+
+        <label for="Parch">Parch (Parents/Children aboard):</label>
+        <input type="number" id="Parch" name="Parch" required><br><br>
+
+        <label for="Fare">Fare:</label>
+        <input type="number" id="Fare" name="Fare" required><br><br>
+
+        <label for="Embarked">Embarked (C, Q, S):</label>
+        <input type="text" id="Embarked" name="Embarked" required><br><br>
+
+        <input type="submit" value="Predict">
+    </form>
+</body>
+</html>
