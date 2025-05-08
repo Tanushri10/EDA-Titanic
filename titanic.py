@@ -129,28 +129,32 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Get the input values from the form
         Pclass = int(request.form['Pclass'])
-        Sex = request.form['Sex']
+
+        # Convert 'male'/'female' to 1/0
+        Sex = request.form['Sex'].strip().lower()
+        if Sex not in ['male', 'female']:
+            return "Error: Invalid value for Sex. Must be 'male' or 'female'."
+        Sex = 1 if Sex == 'male' else 0
+
         Age = float(request.form['Age'])
         SibSp = int(request.form['SibSp'])
         Parch = int(request.form['Parch'])
         Fare = float(request.form['Fare'])
-        Embarked = request.form['Embarked']
 
-        # Preprocess the input data
-        Sex = label_encoder.transform([Sex])[0]
-        Embarked = label_encoder.transform([Embarked])[0]
+        # Convert Embarked to numerical
+        Embarked = request.form['Embarked'].strip().upper()
+        embarked_mapping = {'C': 0, 'Q': 1, 'S': 2}
+        if Embarked not in embarked_mapping:
+            return "Error: Invalid value for Embarked. Must be 'C', 'Q', or 'S'."
+        Embarked = embarked_mapping[Embarked]
 
-        # Make the prediction
-        prediction = model.predict([[Pclass, Sex, Age, SibSp, Parch, Fare, Embarked]])
+        # Final input array
+        features = np.array([[Pclass, Sex, Age, SibSp, Parch, Fare, Embarked]])
 
-        # Output the result
-        if prediction == 1:
-            result = "Survived"
-        else:
-            result = "Did not survive"
-        
+        prediction = model.predict(features)
+        result = 'Survived' if prediction[0] == 1 else 'Did Not Survive'
+
         return render_template('result.html', prediction=result)
 
     except Exception as e:
