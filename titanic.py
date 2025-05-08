@@ -17,14 +17,12 @@ df.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, inplace=True)
 df['Age'] = df['Age'].fillna(df['Age'].median())
 df['Embarked'] = df['Embarked'].fillna(df['Embarked'].mode()[0])
 
-
+print("Duplicate rows:", df.duplicated().sum())
 df.drop_duplicates(inplace=True)
 
 print("Missing values after cleaning:")
 print(df.isnull().sum())
-
 print("Data cleaned ✅")
-
 
 # 1. Countplot of the 'Survived' column
 plt.figure(figsize=(8, 5))
@@ -44,3 +42,41 @@ sns.countplot(x='Survived', hue='Sex', data=df, palette='Set1')
 plt.title('Survival Count by Sex')
 plt.show()
 
+# 4. Embarked vs Survived
+plt.figure(figsize=(8, 5))
+sns.countplot(x='Survived', hue='Embarked', data=df, palette='Set3')
+plt.title('Survival Count by Embarked')
+plt.show()
+
+# 5. Correlation heatmap of numerical features
+plt.figure(figsize=(10, 8))
+corr = df.corr()
+sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f', linewidths=1)
+plt.title('Correlation Heatmap')
+plt.show()
+
+# Model Building
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+# Feature selection and target variable
+X = df.drop('Survived', axis=1)
+X = pd.get_dummies(X, drop_first=True)  # Convert categorical to numerical
+y = df['Survived']
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Logistic Regression Model
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Evaluate model
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+print(f"Accuracy: {accuracy}")
+print(f"Confusion Matrix:\n{conf_matrix}")
