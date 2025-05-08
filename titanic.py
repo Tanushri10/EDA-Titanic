@@ -64,7 +64,9 @@ from sklearn.preprocessing import StandardScaler
 
 # Feature selection and target variable
 X = df.drop('Survived', axis=1)
-X = pd.get_dummies(X, drop_first=True)  # Convert categorical to numerical
+X = pd.get_dummies(X, drop_first=True)
+print("Feature columns:", X.columns.tolist())
+
 y = df['Survived']
 
 scaler = StandardScaler()
@@ -92,3 +94,22 @@ from sklearn.metrics import classification_report
 # Evaluate model performance
 print(classification_report(y_test, y_pred))
 
+
+import joblib
+joblib.dump(model, 'model.pkl')
+
+from flask import Flask, request, jsonify
+import joblib
+app = Flask(__name__)
+
+# Load the trained model
+model = joblib.load('model.pkl')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.get_json(force=True)
+    prediction = model.predict([data['features']])
+    return jsonify({'prediction': int(prediction[0])})
+
+if __name__ == "__main__":
+    app.run(debug=True)
