@@ -81,3 +81,10 @@ accuracy = accuracy_score(y_test, y_pred)
 conf_matrix = confusion_matrix(y_test, y_pred)
 print(f"Accuracy: {accuracy}")
 print(f"Confusion Matrix:\n{conf_matrix}")
+
+
+from sklearn.metrics import classification_report
+
+# Evaluate model performance
+print(classification_report(y_test, y_pred))
+
