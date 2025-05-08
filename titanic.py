@@ -27,7 +27,7 @@ print("Data cleaned ✅")
 
 # 1. Countplot of the 'Survived' column
 plt.figure(figsize=(8, 5))
-sns.countplot(x='Survived', data=df, palette='Set2')
+sns.countplot(x='Survived', data=df)
 plt.title('Survived vs Not Survived')
 plt.show()
 
@@ -51,7 +51,7 @@ plt.show()
 
 # 5. Correlation heatmap of numerical features
 plt.figure(figsize=(10, 8))
-corr = df.corr()
+corr = df.select_dtypes(include='number').corr()
 sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f', linewidths=1)
 plt.title('Correlation Heatmap')
 plt.show()
