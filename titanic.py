@@ -14,8 +14,8 @@ print("Missing values before cleaning:")
 print(df.isnull().sum())
 
 df.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, inplace=True)
-df['Age'].fillna(df['Age'].median(), inplace=True)
-df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
+df['Age'] = df['Age'].fillna(df['Age'].median())
+df['Embarked'] = df['Embarked'].fillna(df['Embarked'].mode()[0])
 
 print("Duplicate rows:", df.duplicated().sum())
 df.drop_duplicates(inplace=True)
@@ -27,7 +27,7 @@ print("Data cleaned ✅")
 
 # 1. Countplot of the 'Survived' column
 plt.figure(figsize=(8, 5))
-sns.countplot(x='Survived', data=df, palette='Set2')
+sns.countplot(x='Survived', data=df)
 plt.title('Survived vs Not Survived')
 plt.show()
 
@@ -51,7 +51,7 @@ plt.show()
 
 # 5. Correlation heatmap of numerical features
 plt.figure(figsize=(10, 8))
-corr = df.corr()
+corr = df.select_dtypes(include='number').corr()
 sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f', linewidths=1)
 plt.title('Correlation Heatmap')
 plt.show()
@@ -60,17 +60,21 @@ plt.show()
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.preprocessing import StandardScaler
 
 # Feature selection and target variable
 X = df.drop('Survived', axis=1)
 X = pd.get_dummies(X, drop_first=True)  # Convert categorical to numerical
 y = df['Survived']
 
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
 # Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Logistic Regression Model
-model = LogisticRegression()
+model = LogisticRegression(max_iter=500)
 model.fit(X_train, y_train)
 
 # Predictions
