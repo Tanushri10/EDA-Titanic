@@ -2,29 +2,39 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.preprocessing import StandardScaler
 
-df=pd.read_csv('titanic dataset/train.csv')
+# Load the Titanic dataset
+df = pd.read_csv('titanic dataset/train.csv')
 print("Rows and Columns:", df.shape)
 print("Column Data Types:\n", df.dtypes)
 print("Null values:\n", df.isnull().sum())
 print("First few rows:\n", df.head())
 
-#data cleaning
+# Data cleaning
 print("Missing values before cleaning:")
 print(df.isnull().sum())
 
+# Dropping unnecessary columns
 df.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, inplace=True)
+
+# Fill missing values
 df['Age'] = df['Age'].fillna(df['Age'].median())
 df['Embarked'] = df['Embarked'].fillna(df['Embarked'].mode()[0])
 
+# Dropping duplicates
 print("Duplicate rows:", df.duplicated().sum())
 df.drop_duplicates(inplace=True)
 
+# Check missing values after cleaning
 print("Missing values after cleaning:")
 print(df.isnull().sum())
 
-print("Data cleaned ✅")
-
+# Data visualization
 # 1. Countplot of the 'Survived' column
 plt.figure(figsize=(8, 5))
 sns.countplot(x='Survived', data=df)
@@ -56,19 +66,16 @@ sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f', linewidths=1)
 plt.title('Correlation Heatmap')
 plt.show()
 
-# Model Building
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.preprocessing import StandardScaler
-
 # Feature selection and target variable
 X = df.drop('Survived', axis=1)
+
+# One-hot encoding for categorical variables
 X = pd.get_dummies(X, drop_first=True)
 print("Feature columns:", X.columns.tolist())
 
 y = df['Survived']
 
+# Scaling the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
@@ -88,39 +95,18 @@ conf_matrix = confusion_matrix(y_test, y_pred)
 print(f"Accuracy: {accuracy}")
 print(f"Confusion Matrix:\n{conf_matrix}")
 
-
-from sklearn.metrics import classification_report
-
 # Evaluate model performance
 print(classification_report(y_test, y_pred))
 
-
-import joblib
+# Save the model and scaler
 joblib.dump(model, 'model.pkl')
+joblib.dump(scaler, 'scaler.pkl')
 
+# Flask app
 from flask import Flask, request, render_template
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
 
 # Initialize Flask app
 app = Flask(__name__)
-
-# Load the Titanic dataset and train the model
-titanic_data = pd.read_csv('titanic dataset/train.csv')
-
-# Preprocessing: Handle categorical features
-label_encoder = LabelEncoder()
-titanic_data['Sex'] = label_encoder.fit_transform(titanic_data['Sex'])
-titanic_data['Embarked'] = label_encoder.fit_transform(titanic_data['Embarked'].fillna('S'))
-
-# Select features and target
-X = titanic_data[['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']]
-y = titanic_data['Survived']
-
-# Train RandomForest model
-model = RandomForestClassifier()
-model.fit(X, y)
 
 @app.route('/')
 def home():
@@ -129,31 +115,37 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        # Get form data from the user
         Pclass = int(request.form['Pclass'])
-
-        # Convert 'male'/'female' to 1/0
-        Sex = request.form['Sex'].strip().lower()
-        if Sex not in ['male', 'female']:
-            return "Error: Invalid value for Sex. Must be 'male' or 'female'."
-        Sex = 1 if Sex == 'male' else 0
-
+        Sex = 1 if request.form['Sex'].lower() == 'male' else 0
         Age = float(request.form['Age'])
         SibSp = int(request.form['SibSp'])
         Parch = int(request.form['Parch'])
         Fare = float(request.form['Fare'])
 
-        # Convert Embarked to numerical
-        Embarked = request.form['Embarked'].strip().upper()
-        embarked_mapping = {'C': 0, 'Q': 1, 'S': 2}
-        if Embarked not in embarked_mapping:
-            return "Error: Invalid value for Embarked. Must be 'C', 'Q', or 'S'."
-        Embarked = embarked_mapping[Embarked]
+        embarked_dict = {'C': 0, 'Q': 1, 'S': 2}
+        Embarked = embarked_dict[request.form['Embarked']]
 
-        # Final input array
-        features = np.array([[Pclass, Sex, Age, SibSp, Parch, Fare, Embarked]])
+        # Create dataframe to apply dummy encoding like in training
+        input_df = pd.DataFrame([[Pclass, Sex, Age, SibSp, Parch, Fare, Embarked]],
+                                columns=['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked'])
 
-        prediction = model.predict(features)
-        result = 'Survived' if prediction[0] == 1 else 'Did Not Survive'
+        # One-hot encode the categorical variables like in training
+        input_df = pd.get_dummies(input_df, drop_first=True)
+
+        # Ensure the input matches the model's expected columns
+        missing_cols = set(model.feature_names_in_) - set(input_df.columns)
+        for col in missing_cols:
+            input_df[col] = 0  # Add missing columns with 0s
+
+        input_df = input_df[model.feature_names_in_]  # Reorder columns to match training data
+
+        # Scale the features
+        input_scaled = scaler.transform(input_df)
+
+        # Make prediction
+        prediction = model.predict(input_scaled)
+        result = 'Survived ✅' if prediction[0] == 1 else 'Did Not Survive ❌'
 
         return render_template('result.html', prediction=result)
 
